@@ -5,7 +5,8 @@
 // File:     FlixAssertion.flix
 // Date:     02.May.2023
 //
-// ==============================================================================
+// =============================================================================
+///
 /// Example:
 ///
 /// ```flix
@@ -23,21 +24,86 @@
 
 mod FlixAssertion {
 
+    ///
+    /// A type class to use as a "is the given container empty or not" predicate.
+    ///
+    /// Example:
+    ///
+    /// ```flix
+    /// instance Empty[Chain[a]] {
+    ///
+    ///     pub override def isEmpty(x: Chain[a]): Bool = Chain.isEmpty(x)
+    ///
+    ///     pub def name(_: Chain[a]): String = "Chain"
+    ///
+    /// }
+    /// ```
+    ///
     pub class Empty[a] {
 
+        ///
+        /// A function that returns the name of the type.
+        ///
+        /// Example:
+        /// `pub def name(_: a): String = "List"`
+        ///
         pub def name(_: a): String
 
+        ///
+        /// A functions that returns `true` if the given container is empty.
+        /// Empty means, that there are not elements in this container.
+        ///
+        /// One of `isEmpty` or `isNotEmpty` shall be overwritten.
+        ///
         pub def isEmpty(x: a): Bool = not Empty.isNotEmpty(x)
 
+        ///
+        /// A functions that returns `true` if the given container is not empty.
+        /// Empty means, that there is at least one elements in this container.
+        ///
+        /// One of `isEmpty` or `isNotEmpty` shall be overwritten.
+        ///
         pub def isNotEmpty(x: a): Bool = not Empty.isEmpty(x)
     }
 
+    ///
+    /// A type class to use as a "is the given container empty or not" predicate.
+    ///
+    /// Example:
+    ///
+    /// ```flix
+    /// instance EmptyEff[MutDeque[a]] {
+    ///
+    ///         pub override def isEmpty(x: MutDeque[a, r]): Bool \ r = MutDeque.isEmpty(x)
+    ///
+    ///         pub def name(_: MutDeque[a, r]): String = "MutDeque"
+    ///     }
+    /// ```
+    ///
     pub class EmptyEff[m: Bool -> Type] {
 
+        ///
+        /// A function that returns the name of the type.
+        ///
+        /// Example:
+        /// `pub def name(_: a): String = "MutMap"`
+        ///
         pub def name(_: m[r]): String
 
+        ///
+        /// A functions that returns `true` if the given container is empty.
+        /// Empty means, that there are not elements in this container.
+        ///
+        /// One of `isEmpty` or `isNotEmpty` shall be overwritten.
+        ///
         pub def isEmpty(x: m[r]): Bool \ r = not EmptyEff.isNotEmpty(x)
 
+        ///
+        /// A functions that returns `true` if the given container is not empty.
+        /// Empty means, that there is at least one elements in this container.
+        ///
+        /// One of `isEmpty` or `isNotEmpty` shall be overwritten.
+        ///
         pub def isNotEmpty(x: m[r]): Bool \ r = not EmptyEff.isEmpty(x)
     }
 
@@ -59,6 +125,8 @@ mod FlixAssertion {
     /// Aborts execution if the two values are not equal and prints the error
     /// message `message`.
     ///
+    /// This is an alias of the infix operator `$==`.
+    ///
     pub def eq(expected: a, actual: a, message: String): Bool with Eq[a], ToString[a] = masked_cast({
         if (expected == actual)
             true
@@ -73,10 +141,23 @@ mod FlixAssertion {
     })
 
     ///
+    /// Asserts that `expected` must equal `actual`.
+    ///
+    /// Aborts execution if the two values are not equal and prints the error
+    /// message `message`.
+    ///
+    /// This is an alias of `eq`.
+    ///
+    pub def $==(expected: a, actual: a, message: String): Bool with Eq[a], ToString[a] =
+        eq(expected, actual, message)
+
+    ///
     /// Asserts that `expected` must not equal `actual`.
     ///
     /// Aborts execution if the two values are equal and prints the error
     /// message `message`.
+    ///
+    /// This is an alias of the infix operator `$!=`.
     ///
     pub def neq(expected: a, actual: a, message: String): Bool with Eq[a], ToString[a] = masked_cast({
         if (expected != actual)
@@ -87,37 +168,194 @@ mod FlixAssertion {
             println("  Expected: ${green(expected)} != ${green(actual)}");
             println("  Actual:   ${red(expected)} == ${red(actual)}");
             println("");
-            ?flixAssertEq
+            ?flixAssertNeq
         }
     })
 
-    pub def isEmpty(l: m[a], message: String): Bool with ToString[m[a]], Empty[m[a]] = masked_cast({
-         if (Empty.isEmpty(l))
+    ///
+    /// Asserts that `expected` must not equal `actual`.
+    ///
+    /// Aborts execution if the two values are equal and prints the error
+    /// message `message`.
+    ///
+    /// This is an alias of `neq`.
+    ///
+    pub def $!=(expected: a, actual: a, message: String): Bool with Eq[a], ToString[a] =
+        neq(expected, actual, message)
+
+    ///
+    /// Asserts that `smaller` is less than `bigger`.
+    ///
+    /// Aborts execution if `smaller` >= `bigger` and prints the error message
+    /// `message`.
+    ///
+    /// This is an alias of `$<`.
+    ///
+    pub def lt(smaller: a, bigger: a, message: String): Bool with Order[a], ToString[a] = masked_cast({
+        if (smaller < bigger)
             true
         else {
             use Console.{green, red};
             println("Assertion Error: ${red(message)}");
-            println("  Expected: ${green("empty ${Empty.name(l)}")}");
-            println("  Actual:   ${red(l)}");
+            println("  Expected: ${green(smaller)} ${green("<")} ${green(bigger)}");
+            println("  Actual:   ${red(smaller)} ${red(">=")} ${red(bigger)}");
+            println("");
+            ?flixAssertLt
+        }
+    })
+
+    ///
+    /// Asserts that `smaller` is less than `bigger`.
+    ///
+    /// Aborts execution if `smaller` >= `bigger` and prints the error message
+    /// `message`.
+    ///
+    /// This is an alias of `lt`.
+    ///
+    pub def $<(smaller: a, bigger: a, message: String): Bool with Order[a], ToString[a] =
+        lt(smaller, bigger, message)
+
+    ///
+    /// Asserts that `smaller` is less than or equal to `bigger`.
+    ///
+    /// Aborts execution if `smaller` > `bigger` and prints the error message
+    /// `message`.
+    ///
+    /// This is an alias of `$<=`.
+    ///
+    pub def lte(smaller: a, bigger: a, message: String): Bool with Order[a], ToString[a] = masked_cast({
+        if (smaller <= bigger)
+            true
+        else {
+            use Console.{green, red};
+            println("Assertion Error: ${red(message)}");
+            println("  Expected: ${green(smaller)} ${green("<=")} ${green(bigger)}");
+            println("  Actual:   ${red(smaller)} ${red(">")} ${red(bigger)}");
+            println("");
+            ?flixAssertLte
+        }
+    })
+
+    ///
+    /// Asserts that `smaller` is less than or equal to `bigger`.
+    ///
+    /// Aborts execution if `smaller` >`bigger` and prints the error message
+    /// `message`.
+    ///
+    /// This is an alias of `lte`.
+    ///
+    pub def $<=(smaller: a, bigger: a, message: String): Bool with Order[a], ToString[a] =
+        lte(smaller, bigger, message)
+
+    ///
+    /// Asserts that `bigger` is greater than `smaller`.
+    ///
+    /// Aborts execution if `bigger` < `smaller` and prints the error message
+    /// `message`.
+    ///
+    /// This is an alias of `$>`.
+    ///
+    pub def gt(bigger: a, smaller: a, message: String): Bool with Order[a], ToString[a] = masked_cast({
+        if (smaller > bigger)
+            true
+        else {
+            use Console.{green, red};
+            println("Assertion Error: ${red(message)}");
+            println("  Expected: ${green(bigger)} ${green(">")} ${green(smaller)}");
+            println("  Actual:   ${red(bigger)} ${red("<=")} ${red(smaller)}");
+            println("");
+            ?flixAssertGt
+        }
+    })
+
+    ///
+    /// Asserts that `bigger` is greater than `smaller`.
+    ///
+    /// Aborts execution if `bigger` <= `smaller` and prints the error message
+    /// `message`.
+    ///
+    /// This is an alias of `gt`.
+    ///
+    pub def $>(bigger: a, smaller: a, message: String): Bool with Order[a], ToString[a] =
+        gt(bigger, smaller, message)
+
+    ///
+    /// Asserts that `bigger` is greater than or equal to `smaller`.
+    ///
+    /// Aborts execution if `bigger` > `smaller` and prints the error message
+    /// `message`.
+    ///
+    /// This is an alias of `$<=`.
+    ///
+    pub def gte(bigger: a, smaller: a, message: String): Bool with Order[a], ToString[a] = masked_cast({
+        if (bigger >= smaller)
+            true
+        else {
+            use Console.{green, red};
+            println("Assertion Error: ${red(message)}");
+            println("  Expected: ${green(bigger)} ${green(">=")} ${green(smaller)}");
+            println("  Actual:   ${red(bigger)} ${red("<")} ${red(smaller)}");
+            println("");
+            ?flixAssertGte
+        }
+    })
+
+    ///
+    /// Asserts that `bigger` is greater than or equal to `smaller`.
+    ///
+    /// Aborts execution if `bigger` < `smaller` and prints the error message
+    /// `message`.
+    ///
+    /// This is an alias of `gte`.
+    ///
+    pub def $>=(bigger: a, smaller: a, message: String): Bool with Order[a], ToString[a] =
+        gte(bigger, smaller, message)
+
+    ///
+    /// Asserts that `x` is empty (the empty list, empty set, empty map, ...).
+    ///
+    /// Aborts execution if `x` is not empty and prints the error message `message`.
+    ///
+    pub def isEmpty(x: m[a], message: String): Bool with ToString[m[a]], Empty[m[a]] = masked_cast({
+         if (Empty.isEmpty(x))
+            true
+        else {
+            use Console.{green, red};
+            println("Assertion Error: ${red(message)}");
+            println("  Expected: ${green("empty ${Empty.name(x)}")}");
+            println("  Actual:   ${red(x)}");
             println("");
             ?flixAssertEmpty
         }
     })
 
-    pub def isNotEmpty(l: m[a], message: String): Bool with ToString[m[a]], Empty[m[a]] = masked_cast({
-         if (Empty.isNotEmpty(l))
+    ///
+    /// Asserts that `x` is not empty (not the empty list, empty set, empty map, ...).
+    ///
+    /// Aborts execution if `x` is empty and prints the error message `message`.
+    ///
+    pub def isNotEmpty(x: m[a], message: String): Bool with ToString[m[a]], Empty[m[a]] = masked_cast({
+         if (Empty.isNotEmpty(x))
             true
         else {
             use Console.{green, red};
             println("Assertion Error: ${red(message)}");
-            println("  Expected: ${green("not empty ${Empty.name(l)}")}");
-            println("  Actual:   ${red(l)}");
+            println("  Expected: ${green("not empty ${Empty.name(x)}")}");
+            println("  Actual:   ${red(x)}");
             println("");
             ?flixAssertNotEmpty
         }
     })
 
-    pub def isEmptyEff[m: Type -> Bool -> Type, a: Type, r: Bool](l: m[a, r], message: String, toString: m[a, r] -> String \ r): Bool with ToString[a], EmptyEff[m[a]] =
+    ///
+    /// Asserts that `x` is empty (the empty list, empty set, empty map, ...).
+    /// Needs a function `toString` with which to convert the given type
+    /// to a `String`.
+    ///
+    /// Aborts execution if `x` is not empty and prints the error message `message`.
+    ///
+    pub def isEmptyEff[m: Type -> Bool -> Type, a: Type, r: Bool]
+            (l: m[a, r], message: String, toString: m[a, r] -> String \ r): Bool with ToString[a], EmptyEff[m[a]] =
         masked_cast({
             if (EmptyEff.isEmpty(l))
                 true
@@ -131,7 +369,15 @@ mod FlixAssertion {
             }
         })
 
-    pub def isNotEmptyEff[m: Type-> Bool -> Type, a: Type, r: Bool](l: m[a, r], message: String, toString: m[a, r] -> String \ r): Bool with ToString[a], EmptyEff[m[a]] =
+    ///
+    /// Asserts that `x` is not empty (not the empty list, empty set, empty map,
+    /// ...). Needs a function `toString` with which to convert the given type
+    /// to a `String`.
+    ///
+    /// Aborts execution if `x` is empty and prints the error message `message`.
+    ///
+    pub def isNotEmptyEff[m: Type-> Bool -> Type, a: Type, r: Bool]
+            (l: m[a, r], message: String, toString: m[a, r] -> String \ r): Bool with ToString[a], EmptyEff[m[a]] =
         masked_cast({
             if (EmptyEff.isNotEmpty(l))
                 true
@@ -144,6 +390,8 @@ mod FlixAssertion {
                 ?flixAssertNotEmptyEff
             }
         })
+
+    // Implementations of `Empty` and `EmptyEff`. ==============================
 
     instance Empty[List[a]] {
 
