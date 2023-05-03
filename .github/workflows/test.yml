@@ -33,4 +33,4 @@ jobs:
 
       - name: Run Tests
         run: |
-          java -jar flix.jar build-pkg test
+          java -jar flix.jar test
