@@ -1,0 +1,18 @@
+[package]
+name = "scripts"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[[bin]]
+name = "parse-changelog"
+test = false
+bench = false
+path = "src/parse_changelog.rs"
+
+[dependencies]
+regex = "1.8.1"
+
+[dev-dependencies]

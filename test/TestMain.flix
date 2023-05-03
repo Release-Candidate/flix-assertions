@@ -159,7 +159,8 @@ def testEmptyEff01(): Bool =
 @Test
 def testNotEmptyEff01(): Bool =
     region r {
-        FlixAssertion.isNotEmptyEff(MutList.new(r): MutList[Int32, r], "This should not be the empty MutList!", MutList.toString)
+        let emptyList = MutList.new(r): MutList[Int32, r];
+        FlixAssertion.isNotEmptyEff(emptyList, "This should not be the empty MutList!", MutList.toString)
     }
 
 pub def main(): Unit \ IO = println("main")

@@ -1,0 +1,62 @@
+# SPDX-FileCopyrightText:  Copyright 2023 Roland Csaszar
+# SPDX-License-Identifier: Apache-2.0
+#
+# Project:  flix-assertions
+# File:     release.yml
+# Date:     03.May.2023
+#
+# ==============================================================================
+
+name: Release
+
+on:
+  release:
+    types: [created]
+
+  push:
+    tags:
+      - "v*.*.*"
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  release:
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Get Tag
+        uses: olegtarasov/get-tag@v2.1.2
+        id: tagName
+        with:
+          tagRegex: "v(.*)"
+
+      - name: Install flix
+        run: |
+          curl https://github.com/flix/flix/releases/download/latest/flix.jar --output ./flix.jar
+
+      - name: Generate Package
+        run: |
+          java -jar flix.jar build-pkg
+
+      - name: Generate Changelog
+        run: |
+           cargo install rust-script
+           rust-script scripts/src/parse_changelog.rs ${{ env.GIT_TAG_NAME }}
+
+      - name: Release to GitHub
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          name: Version ${{ env.GIT_TAG_NAME }}
+          body_path: latest_changelog.md
+          files: ./artifact/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

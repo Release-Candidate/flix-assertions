@@ -282,7 +282,7 @@ mod FlixAssertion {
     ///
     /// Asserts that `bigger` is greater than or equal to `smaller`.
     ///
-    /// Aborts execution if `bigger` > `smaller` and prints the error message
+    /// Aborts execution if `bigger` < `smaller` and prints the error message
     /// `message`.
     ///
     /// This is an alias of `$<=`.
