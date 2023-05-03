@@ -40,7 +40,7 @@ jobs:
 
       - name: Install flix
         run: |
-          curl https://github.com/flix/flix/releases/download/v0.35.0/flix.jar --output ./flix.jar
+          curl -L https://github.com/flix/flix/releases/download/v0.35.0/flix.jar --output ./flix.jar
 
       - name: Generate Package
         run: |
