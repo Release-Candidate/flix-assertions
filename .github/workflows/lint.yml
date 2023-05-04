@@ -33,4 +33,4 @@ jobs:
 
       - name: lint
         run: |
-          java -jar flix.jar check
+          $JAVA_HOME_17_X64/java -jar flix.jar check

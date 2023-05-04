@@ -33,4 +33,4 @@ jobs:
 
       - name: Run Tests
         run: |
-          java -jar flix.jar test
+          $JAVA_HOME_17_X64/java -jar flix.jar test

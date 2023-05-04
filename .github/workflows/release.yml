@@ -44,7 +44,7 @@ jobs:
 
       - name: Generate Package
         run: |
-          java -jar flix.jar build-pkg
+          $JAVA_HOME_17_X64/java -jar flix.jar build-pkg
 
       - name: Generate Changelog
         run: |
