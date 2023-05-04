@@ -25,6 +25,73 @@
 mod FlixAssertion {
 
     ///
+    /// A type class to use as `does the container contain the given element?`
+    /// predicate.
+    ///
+    /// Example:
+    ///
+    /// ```flix
+    /// instance FlixAssertion.Contains[Nec] {
+    ///
+    ///     pub override def contains(xs: Nec[a], x: a): Bool with Eq[a] =
+    ///          Nec.exists(e -> e == x, xs)
+    // }
+    /// ```
+    ///
+    pub class Contains[m: Type -> Type] {
+
+        ///
+        /// Return `true` if `xs` contains the element `x`, `false` else.
+        ///
+        /// Only one of `contains` and `notContains` shall be overwritten.
+        ///
+        pub def contains(xs: m[a], x: a): Bool with Eq[a] =
+            not Contains.notContains(xs, x)
+
+        ///
+        /// Return `true` if `xs` does not contain the element `x`, `false` else.
+        ///
+        /// Only one of `contains` and `notContains` shall be overwritten.
+        ///
+        pub def notContains(xs: m[a], x: a): Bool with Eq[a] =
+            not Contains.contains(xs, x)
+    }
+
+    ///
+    /// A type class to use as `does the container contain the given element?`
+    /// predicate for mutable types (like `MutList`).
+    ///
+    /// Example:
+    ///
+    /// ```flix
+    /// instance FlixAssertion.ContainsEff[MutList] {
+    ///
+    ///     pub override def contains(xs: MutList[a, r], x: a): Bool \ {ef, r} with Eq[a] =
+    ///         checked_ecast(MutList.exists(e -> e == x, xs))
+    ///
+    /// }
+    /// ```
+    ///
+    pub class ContainsEff[m: Type -> Bool -> Type] {
+
+        ///
+        /// Return `true` if `xs` contains the element `x`, `false` else.
+        ///
+        /// Only one of `contains` and `notContains` shall be overwritten.
+        ///
+        pub def contains(xs: m[a, r], x: a): Bool \ {ef, r} with Eq[a] =
+            not ContainsEff.notContains(xs, x)
+
+        ///
+        /// Return `true` if `xs` does not contain the element `x`, `false` else.
+        ///
+        /// Only one of `contains` and `notContains` shall be overwritten.
+        ///
+        pub def notContains(xs: m[a, r], x: a): Bool \ {ef, r} with Eq[a] =
+            not ContainsEff.contains(xs, x)
+    }
+
+    ///
     /// A type class to use as a "is the given container empty or not" predicate.
     ///
     /// Example:
@@ -312,6 +379,204 @@ mod FlixAssertion {
         gte(bigger, smaller, message)
 
     ///
+    /// Asserts that the string `s` contains the substring `subString`.
+    ///
+    /// Aborts execution if the string `s` does not contain the substring
+    /// `subString` and prints the error message `message`.
+    ///
+    pub def containsString(subString: String, s: String, message: String): Bool = masked_cast({
+        if (String.contains({substr = subString}, s))
+            true
+        else {
+            use Console.{green, red};
+            println("Assertion Error: ${red(message)}");
+            println("  Expected: '${green(s)}' contains substring '${green(subString)}'");
+            println("  Actual:   '${red(s)}' does not contain '${red(subString)}'");
+            println("");
+            ?flixAssertSubStr
+        }
+    })
+
+    ///
+    /// Asserts that the string `s` does not contain the substring `subString`.
+    ///
+    /// Aborts execution if the string `s` contains the substring `subString`
+    /// and prints the error message `message`.
+    ///
+    pub def notContainsString(subString: String, s: String, message: String): Bool = masked_cast({
+        if (not String.contains({substr = subString}, s))
+            true
+        else {
+            use Console.{green, red};
+            println("Assertion Error: ${red(message)}");
+            println("  Expected: '${green(s)}' does not contain substring '${green(subString)}'");
+            println("  Actual:   '${red(s)}' contains '${red(subString)}'");
+            println("");
+            ?flixAssertNotSubStr
+        }
+    })
+
+    ///
+    /// Asserts that the regex `regex` matches the whole string `s`.
+    ///
+    /// Aborts execution if the string `s` is not matched as a whole by the regex
+    /// `regex` and prints the error message `message`.
+    ///
+    pub def matchesString(regex: String, s: String, message: String): Bool = masked_cast({
+        if (String.isMatch({ regex = regex }, s))
+            true
+        else {
+            use Console.{green, red};
+            println("Assertion Error: ${red(message)}");
+            println("  Expected: regex '${green(regex)}' matches string '${green(s)}'");
+            println("  Actual:   regex '${red(regex)}' does not match string '${red(s)}'");
+            println("");
+            ?flixAssertMatch
+        }
+    })
+
+    ///
+    /// Asserts that the regex `regex` does not match the whole string `s`.
+    ///
+    /// Aborts execution if the string `s` is matched as a whole by the regex
+    /// `regex` and prints the error message `message`.
+    ///
+    pub def notMatchesString(regex: String, s: String, message: String): Bool = masked_cast({
+        if (not String.isMatch({ regex = regex }, s))
+            true
+        else {
+            use Console.{green, red};
+            println("Assertion Error: ${red(message)}");
+            println("  Expected: regex '${green(regex)}' does not match string '${green(s)}'");
+            println("  Actual:   regex '${red(regex)}' matches string '${red(s)}'");
+            println("");
+            ?flixAssertNotMatch
+        }
+    })
+
+    ///
+    /// Asserts that the regex `regex` matches a substring of string `s`.
+    ///
+    /// Aborts execution if no substring of the string `s` is  matched by the regex
+    /// `regex` and prints the error message `message`.
+    ///
+    pub def matchesSubString(regex: String, s: String, message: String): Bool = masked_cast({
+        if (String.isSubmatch({ regex = regex }, s))
+            true
+        else {
+            use Console.{green, red};
+            println("Assertion Error: ${red(message)}");
+            println("  Expected: regex '${green(regex)}' matches substring of '${green(s)}'");
+            println("  Actual:   regex '${red(regex)}' does not match substring of '${red(s)}'");
+            println("");
+            ?flixAssertMatchSub
+        }
+    })
+
+    ///
+    /// Asserts that the regex `regex` matches a substring of string `s`.
+    ///
+    /// Aborts execution if no substring of the string `s` is  matched by the regex
+    /// `regex` and prints the error message `message`.
+    ///
+    pub def notMatchesSubString(regex: String, s: String, message: String): Bool = masked_cast({
+        if (not String.isSubmatch({ regex = regex }, s))
+            true
+        else {
+            use Console.{green, red};
+            println("Assertion Error: ${red(message)}");
+            println("  Expected: regex '${green(regex)}' does not match substring of '${green(s)}'");
+            println("  Actual:   regex '${red(regex)}' matches substring of '${red(s)}'");
+            println("");
+            ?flixAssertNotMatchSub
+        }
+    })
+
+    ///
+    /// Asserts that the container `xs` contains the element `x`.
+    ///
+    /// Aborts execution if the container `xs` does not contain the element
+    /// `x` and prints the error message `message`.
+    ///
+    pub def contains(xs: m[a], x: a, message: String): Bool with ToString[m[a]], ToString[a], Contains[m], Eq[a] = masked_cast({
+        if (Contains.contains(xs, x))
+            true
+        else {
+            use Console.{green, red};
+            println("Assertion Error: ${red(message)}");
+            println("  Expected: ${green(xs)} contains ${green(x)}");
+            println("  Actual:   ${red(xs)} does not contain ${red(x)}");
+            println("");
+            ?flixAssertContains
+        }
+    })
+
+    ///
+    /// Asserts that the mutable container `xs` contains the element `x`.
+    /// Needs a function `toString` with which to convert the given type
+    /// to a `String`.
+    ///
+    /// Aborts execution if the container `xs` does not contain the element
+    /// `x` and prints the error message `message`.
+    ///
+    pub def containsEff[m: Type -> Bool -> Type, a: Type, r: Bool]
+            (xs: m[a, r], x: a, message: String, toString: m[a, r] -> String \ r):
+                 Bool with ToString[a], ContainsEff[m], Eq[a] = masked_cast({
+        if (ContainsEff.contains(xs, x))
+            true
+        else {
+            use Console.{green, red};
+            println("Assertion Error: ${red(message)}");
+            println("  Expected: ${green(toString(xs))} contains ${green(x)}");
+            println("  Actual:   ${red(toString(xs))} does not contain ${red(x)}");
+            println("");
+            ?flixAssertContainsEff
+        }
+    })
+
+    ///
+    /// Asserts that the container `xs` does not contain the element `x`.
+    ///
+    /// Aborts execution if the container `xs` contains the element
+    /// `x` and prints the error message `message`.
+    ///
+    pub def notContains(xs: m[a], x: a, message: String): Bool with ToString[m[a]], ToString[a], Contains[m], Eq[a] = masked_cast({
+        if (Contains.notContains(xs, x))
+            true
+        else {
+            use Console.{green, red};
+            println("Assertion Error: ${red(message)}");
+            println("  Expected: ${green(xs)} does not contain ${green(x)}");
+            println("  Actual:   ${red(xs)} contains ${red(x)}");
+            println("");
+            ?flixAssertNotContains
+        }
+    })
+
+    ///
+    /// Asserts that the mutable container `xs` does not contain the element `x`.
+    /// Needs a function `toString` with which to convert the given type
+    /// to a `String`.
+    ///
+    /// Aborts execution if the container `xs` contains the element
+    /// `x` and prints the error message `message`.
+    ///
+    pub def notContainsEff[m: Type -> Bool -> Type, a: Type, r: Bool]
+        (xs: m[a, r], x: a, message: String, toString: m[a, r] -> String \ r):
+            Bool with ToString[a], ContainsEff[m], Eq[a] = masked_cast({
+        if (ContainsEff.notContains(xs, x))
+            true
+        else {
+            use Console.{green, red};
+            println("Assertion Error: ${red(message)}");
+            println("  Expected: ${green(toString(xs))} does not contain ${green(x)}");
+            println("  Actual:   ${red(toString(xs))} contains ${red(x)}");
+            println("");
+            ?flixAssertNotContainsEff
+        }
+    })
+
+    ///
     /// Asserts that `x` is empty (the empty list, empty set, empty map, ...).
     ///
     /// Aborts execution if `x` is not empty and prints the error message `message`.
@@ -390,6 +655,81 @@ mod FlixAssertion {
                 ?flixAssertNotEmptyEff
             }
         })
+
+    // Implementations of `Contains` and `ContainsEff` =========================
+
+    instance FlixAssertion.Contains[List] {
+
+        pub override def contains(xs: List[a], x: a): Bool with Eq[a] =
+            List.exists(e -> e == x, xs)
+    }
+
+    instance FlixAssertion.Contains[Vector] {
+
+        pub override def contains(xs: Vector[a], x: a): Bool with Eq[a] =
+            Vector.exists(e -> e == x, xs)
+    }
+
+    instance FlixAssertion.Contains[Chain] {
+
+        pub override def contains(xs: Chain[a], x: a): Bool with Eq[a] =
+            Chain.exists(e -> e == x, xs)
+    }
+
+    instance FlixAssertion.Contains[Nel] {
+
+        pub override def contains(xs: Nel[a], x: a): Bool with Eq[a] =
+             Nel.exists(e -> e == x, xs)
+    }
+
+    instance FlixAssertion.Contains[Nec] {
+
+        pub override def contains(xs: Nec[a], x: a): Bool with Eq[a] =
+             Nec.exists(e -> e == x, xs)
+    }
+
+    instance FlixAssertion.Contains[Set] {
+
+        pub override def contains(xs: Set[a], x: a): Bool with Eq[a] =
+            Set.exists(e -> e == x, xs)
+    }
+
+    instance FlixAssertion.Contains[Map[k]] {
+
+        pub override def contains(xs: Map[k, v], x: v): Bool with Eq[v] =
+            Map.exists((_, v) -> v == x, xs)
+    }
+
+    instance FlixAssertion.Contains[MultiMap[k]] {
+
+        pub override def contains(xs: MultiMap[k, v], x: v): Bool with Eq[v] =
+            MultiMap.exists((_, v) -> v == x, xs)
+    }
+
+    instance FlixAssertion.ContainsEff[MutList] {
+
+        pub override def contains(xs: MutList[a, r], x: a): Bool \ {ef, r} with Eq[a] =
+            checked_ecast(MutList.exists(e -> e == x, xs))
+
+    }
+
+    instance FlixAssertion.ContainsEff[MutSet] {
+
+        pub override def contains(xs: MutSet[a, r], x: a): Bool \ {ef, r} with Eq[a] =
+            checked_ecast(MutSet.exists(e -> e == x, xs))
+    }
+
+    instance FlixAssertion.ContainsEff[Array] {
+
+        pub override def contains(xs: Array[a, r], x: a): Bool \ {ef, r} with Eq[a] =
+            checked_ecast(Array.exists(e -> e == x, xs))
+    }
+
+    instance FlixAssertion.ContainsEff[MutMap[k]] {
+
+        pub override def contains(xs: MutMap[k, v, r], x: v): Bool \ {ef, r} with Eq[v] =
+            checked_ecast(MutMap.exists((_, v) -> v == x, xs))
+    }
 
     // Implementations of `Empty` and `EmptyEff`. ==============================
 

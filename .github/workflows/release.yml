@@ -40,16 +40,40 @@ jobs:
 
       - name: Install flix
         run: |
-          curl -L https://github.com/flix/flix/releases/download/v0.35.0/flix.jar --output ./flix.jar
+          curl -L https://github.com/flix/flix/releases/download/v0.36.0/flix.jar --output ./flix.jar
 
       - name: Generate Package
         run: |
-          $JAVA_HOME_17_X64/bin/java -jar flix.jar build-pkg
+           $JAVA_HOME_17_X64/bin/java -jar flix.jar build-pkg
 
       - name: Generate Changelog
+        shell: python
         run: |
-           cargo install rust-script
-           rust-script scripts/src/parse_changelog.rs ${{ env.GIT_TAG_NAME }}
+          import re
+          import sys
+
+          CHANGELOG_PATH = "./CHANGELOG.md"
+          CHANGELOG_REGEX = r"^## (Version (\S+) \S+\n.*?\n)## "
+          OUT_FILE_PATH = "./latest_changelog.md"
+
+          """Main entry point of the script."""
+          with open(
+              CHANGELOG_PATH,
+              mode="r",
+              encoding="UTF-8",
+          ) as changelog:
+              match = re.search(
+                  CHANGELOG_REGEX,
+                  string=changelog.read(),
+                  flags=re.UNICODE | re.MULTILINE | re.DOTALL,
+              )
+              if match:
+                  version = match.group(2)
+                  arg_version = ${{ env.GIT_TAG_NAME }}
+                  if version != arg_version:
+                      exit(1)
+                  with open(OUT_FILE_PATH, mode="wt", encoding="UTF-8") as outfile:
+                      outfile.write(match.group(1))
 
       - name: Release to GitHub
         uses: softprops/action-gh-release@v1

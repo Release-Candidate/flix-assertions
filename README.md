@@ -6,7 +6,9 @@ Various additional assertions for the [Flix](https://flix.dev) programming langu
 - [Usage](#usage)
   - [Example](#example)
   - [Infix Format](#infix-format)
+  - [Tests for "Contains"](#tests-for-contains)
   - [Emptiness](#emptiness)
+  - [Why these Explicit Assertions?](#why-these-explicit-assertions)
 - [Changes](#changes)
 - [Build targets](#build-targets)
 - [License](#license)
@@ -21,7 +23,7 @@ Add the following stanza to your `flix.toml`:
 
 ```toml
 [dependencies]
-"github:Release-Candidate/flix-assertions" = "0.2.0"
+"github:Release-Candidate/flix-assertions" = "0.3.0"
 ```
 
 Available assertions:
@@ -34,6 +36,19 @@ Available assertions:
   - `>=`: `FlixAssertion.gte`, `FlixAssertion.$>=`
   - `<`: `FlixAssertion.lt`, `FlixAssertion.$<`
   - `<=`: `FlixAssertion.lte`, `FlixAssertion.$<=`
+- String predicates:
+  - `containsString`
+  - `notContainsString`
+  - `matchesString` - whether the whole string is matched by a regex
+  - `notMatchesString` - whether the regex does not match the whole string
+  - `matchesSubString` - whether the regex matches a substring of the given string
+  - `notMatchesSubString` - whether the regex does not matche a substring of the given string
+- Test, if a container contains a given element, for types like `List` or `Map`:
+  - `FlixAssertion.contains`
+  - `FlixAssertion.notContains`
+- Test, if a container contains a given element, for mutable types like `MutList` or `Array`:
+  - `FlixAssertion.containsEff`
+  - `FlixAssertion.notContainsEff`
 - Tests for emptiness, for types like `List` or `Map`:
   - `FlixAssertion.isEmpty`
   - `FlixAssertion.isNotEmpty`
@@ -87,6 +102,45 @@ def testEq04(): Bool =
 
 For more examples see the test source file [./test/TestMain.flix](./test/TestMain.flix)
 
+### Tests for "Contains"
+
+To be able to test your type if it contains a given element, it must implement the `Contains` or `ContainsEff` type class.
+
+The following Flix types already implement one of these:
+
+- `Contains`:
+  - `List`
+  - `Vector`
+  - `Chain`
+  - `Nel`
+  - `Nec`
+  - `Map`
+  - `Set`
+  - `Multimap`
+- `ContainsEff`:
+  - `MutList`
+  - `MutSet`
+  - `Array`
+  - `MutMap`
+
+Examples on how to implement `Contains` and `ContainsEff`:
+
+```flix
+instance FlixAssertion.Contains[Nel] {
+
+    pub override def contains(xs: Nel[a], x: a): Bool with Eq[a] =
+        Nel.exists(e -> e == x, xs)
+}
+```
+
+```flix
+instance FlixAssertion.ContainsEff[MutSet] {
+
+    pub override def contains(xs: MutSet[a, r], x: a): Bool \ {ef, r} with Eq[a] =
+        checked_ecast(MutSet.exists(e -> e == x, xs))
+}
+```
+
 ### Emptiness
 
 To be able to test your type for emptiness, it must implement the `Empty` or `EmptyEff` type class.
@@ -127,6 +181,47 @@ instance EmptyEff[MutMap[k, v]] {
     pub def name(_: MutMap[k, v, r]): String = "MutMap"
 }
 ```
+
+### Why these Explicit Assertions?
+
+Why does e.g. `containsString` exist and why isn't `eq` enough?
+
+With the explicit comparisons the actual value that is compared is automatically printed, wheres with `eq` you needed to add it as `message` argument.
+
+Example:
+
+```flix
+@Test
+def testContainsText01(): Bool =
+    FlixAssertion.eq(true, String.contains({substr = "The"}, "Find the word"), "Substring is not in string!")
+```
+
+error message:
+
+```text
+FAIL  testContainsText01
+Assertion Error: Substring is not in string!
+  Expected: true
+  Actual:   false
+```
+
+vs.
+
+```flix
+@Test
+def testContainsText02(): Bool =
+    FlixAssertion.containsString("The", "Find the word", "Substring is not in string!")
+```
+
+error message:
+
+```text
+FAIL  testContainsText02
+Assertion Error: Substring is not in string!
+  Expected: 'Find the word' contains substring 'The'
+  Actual:   'Find the word' does not contain 'The'
+```
+
 
 ## Changes
 
