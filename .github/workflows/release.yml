@@ -69,7 +69,7 @@ jobs:
               )
               if match:
                   version = match.group(2)
-                  arg_version = ${{ env.GIT_TAG_NAME }}
+                  arg_version = "${{ env.GIT_TAG_NAME }}"
                   if version != arg_version:
                       exit(1)
                   with open(OUT_FILE_PATH, mode="wt", encoding="UTF-8") as outfile:
