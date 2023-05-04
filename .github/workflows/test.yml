@@ -39,4 +39,4 @@ jobs:
       - name: Run Tests - Windows
         if: ${{ startsWith(matrix.os, 'windows') }}
         run: |
-          %JAVA_HOME_17_X64%\bin\java -jar flix.jar test
+          & "$JAVA_HOME_17_X64\bin\java" -jar flix.jar test
