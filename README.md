@@ -1,3 +1,6 @@
+> [!WARNING]
+> This repository has been moved to [Codeberg: Flix Assertions](https://codeberg.org/Release-Candidate/flix-assertions)
+
 # Flix Assertions
 
 Various additional assertions for the [Flix](https://flix.dev) programming language.
